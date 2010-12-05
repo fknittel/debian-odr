@@ -1,3 +1,9 @@
+odr (0.13-1) fsmi-lenny; urgency=low
+
+  * odrd: fix logic error: in -> not in
+
+ -- Philipp Kern <pkern@debian.org>  Sun, 05 Dec 2010 17:34:22 +0100
+
 odr (0.12-1) fsmi-lenny; urgency=low
 
   [ Philipp Kern ]
