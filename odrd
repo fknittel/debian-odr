@@ -39,6 +39,7 @@ from odr.cmdconnection import CommandConnection, CommandConnectionListener
 from odr.timeoutmgr import TimeoutManager
 from odr.socketloop import SocketLoop
 import odr.dhcprequestor
+import odr.listeningsocket
 from odr.weakmethod import WeakBoundMethod
 from odr.route import network_mask
 
@@ -436,7 +437,7 @@ class OvpnCmdConn(CommandConnection):
         self.log = logging.getLogger('ovpncmdconn')
 
     def __del__(self):
-        self.log.debug('destructing OvnCmdConn')
+        self.log.debug('destructing OvpnCmdConn')
         if self._ret_f is not None:
             if not self._wrote_ret:
                 self._write_ret(ovpn.CC_RET_FAILED)
@@ -462,6 +463,18 @@ class OvpnCmdConn(CommandConnection):
         """
         self.log.debug('DHCP request succeeded: %s', repr(res))
 
+        if 'ip_address' not in res or 'subnet_mask' not in res:
+            self.log.error('DHCP request failed to provide a valid IP '\
+                    'address: %s' % (repr(res)))
+            self._write_ret(ovpn.CC_RET_FAILED)
+            return
+
+        if 'rebinding_timeout' not in res or 'lease_timeout' in res:
+            self.log.error('DHCP request without lease indication: %s' % (
+                    repr(res)))
+            self._write_ret(ovpn.CC_RET_FAILED)
+            return
+
         self.log.debug('writing OpenVPN client configuration')
         self._config_f.seek(0)
 
@@ -475,9 +488,12 @@ class OvpnCmdConn(CommandConnection):
         if self._realm_data.default_gateway is not None:
             self._config_f.write('push "route-gateway %s"\n' % (
                 self._realm_data.default_gateway))
-        else:
+        elif 'gateway' in res:
             self._config_f.write('push "route-gateway %s"\n' % (
                 res['gateway']))
+        else:
+            self.log.debug('DHCP request provided no gateway information: %s'\
+                    % (repr(res)))
         if self._realm_data.provide_default_route and ('gateway' in res or \
                 self._realm_data.default_gateway is not None):
             self._config_f.write('push "redirect-gateway def1"\n')
@@ -494,7 +510,9 @@ class OvpnCmdConn(CommandConnection):
 
         for dns_ip in res['dns']:
             self._config_f.write('push "dhcp-option DNS %s"\n' % dns_ip)
-        self._config_f.write('push "dhcp-option DOMAIN %s"\n' % res['domain'])
+        if 'domain' in res:
+            self._config_f.write('push "dhcp-option DOMAIN %s"\n' % \
+                    res['domain'])
 
         self._config_f.flush()
         os.fsync(self._config_f.fileno())
@@ -924,7 +942,7 @@ def load_requestors(sloop, requestor_mgr, realms_data):
                     listen_device=realm_data.dhcp_listening_device)
             sloop.add_socket_handler(requestor)
             requestor_mgr.add_requestor(requestor)
-    except odr.dhcprequestor.DhcpLocalAddressBindFailed, ex:
+    except odr.listeningsocket.SocketLocalAddressBindFailed, ex:
         logging.error('Could not bind to DHCP listening address %s:%d@%s',
                 ex.args[0], ex.args[1], ex.args[2])
         return False
