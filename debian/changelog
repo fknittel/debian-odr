@@ -1,3 +1,30 @@
+odr (0.12-1) fsmi-lenny; urgency=low
+
+  [ Philipp Kern ]
+  * odr/dhcprequestor.py: implement renewal/rebinding defaults
+  * odr/dhcprequestor.py: cast _start_time to int
+  * odrd: correct a typo in a log message
+  * odr/dhcprequestor.py: convert docstrings to Sphinx format
+  * docs: add Sphinx documentation build system
+  * TODO: move to docs/TODO.rst
+  * docs/index.rst: update intro, features, reqs
+  * odr/machasher.py: not needed anymore
+  * docs: add odr.cmdconnection
+
+  [ Fabian Knittel ]
+  * odr/dhcprequestor.py: make sure failed DHCP packet handling does not
+    drop the socket handler
+  * odrd: check existance of DHCP request params before usage
+
+  [ Philipp Kern ]
+  * odrd: fix syntax error: else if -> elif
+  * odr/dhcprequestor.py: refactor socket creation into ListeningSocket
+  * odr/timeoutmgr.py: clarify documentation of add_*_timeout
+  * .gbp.conf: added for git-buildpackage
+  * debian/control: add myself as an uploader
+
+ -- Philipp Kern <pkern@debian.org>  Sun, 05 Dec 2010 17:21:28 +0100
+
 odr (0.11-1) fsmi-lenny; urgency=low
 
   * New upstream release:
